@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6-Day Workout Split</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F0EDE8; font-family: Georgia, serif; min-height: 100vh; }
+
+header {
+background: #1C2A3A; color: #F0EDE8;
+padding: 18px 20px 0;
+position: sticky; top: 0; z-index: 50;
+box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+header p  { font-size: 11px; opacity: .45; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; font-family: sans-serif; }
+header h1 { font-size: 20px; font-weight: bold; margin-bottom: 12px; }
+
+.tab-bar {
+display: flex; gap: 0; overflow-x: auto;
+border-bottom: 1px solid rgba(255,255,255,0.1);
+scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+flex-shrink: 0; padding: 10px 14px;
+background: transparent; border: none;
+border-bottom: 2px solid transparent;
+color: rgba(240,237,232,0.45);
+font-family: sans-serif; font-size: 11px; font-weight: 700;
+cursor: pointer; text-align: center; line-height: 1.3;
+transition: color .15s; white-space: nowrap;
+}
+.tab.active { color: #7EC8A0; border-bottom-color: #7EC8A0; }
+.tab .tab-label { display: block; }
+.tab .tab-sub { display: block; font-size: 9px; opacity: 0.6; margin-top: 1px; }
+
+.progress-bar { height: 3px; background: rgba(255,255,255,0.1); }
+.progress-fill { height: 100%; background: #7EC8A0; transition: width .4s; }
+
+main { padding: 16px 16px 80px; max-width: 680px; margin: 0 auto; }
+
+.day-panel { display: none; }
+.day-panel.active { display: block; }
+
+.day-header {
+display: flex; align-items: center; gap: 12px;
+margin-bottom: 16px; padding: 14px 16px;
+border-radius: 14px; color: white;
+}
+.day-header .emoji { font-size: 28px; }
+.day-header h2 { font-size: 18px; font-weight: bold; }
+.day-header .meta { font-size: 12px; opacity: 0.8; font-family: sans-serif; margin-top: 2px; }
+.badge {
+margin-left: auto; padding: 4px 10px; border-radius: 100px;
+font-size: 10px; font-family: sans-serif; font-weight: 700;
+background: rgba(255,255,255,0.2); white-space: nowrap;
+}
+
+.section-label {
+font-size: 10px; font-weight: 700; letter-spacing: 2px;
+text-transform: uppercase; color: #888;
+font-family: sans-serif; margin: 18px 0 8px 4px;
+}
+
+.item {
+background: white; border-radius: 12px; margin-bottom: 6px;
+border: 1.5px solid #E8E4DF;
+box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+overflow: hidden; transition: border-color .15s;
+}
+.item.done { border-color: #7EC8A080; }
+
+.item-row {
+display: flex; align-items: center; gap: 12px;
+padding: 11px 14px; cursor: pointer;
+}
+.check {
+width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+border: 2px solid #CCC; background: white;
+display: flex; align-items: center; justify-content: center;
+font-size: 11px; color: white; transition: all .15s;
+}
+.item.done .check { background: #7EC8A0; border-color: #7EC8A0; }
+.item.done .ex-name { text-decoration: line-through; color: #AAA; }
+
+.ex-name  { font-size: 14px; font-weight: 700; color: #1C2A3A; font-family: sans-serif; flex: 1; }
+.ex-detail{ font-size: 11px; color: #999; font-family: sans-serif; margin-top: 2px; }
+
+.expand-btn {
+background: none; border: none; color: #CCC;
+font-size: 16px; cursor: pointer; padding: 0 4px;
+transition: transform .2s; flex-shrink: 0;
+}
+.item.expanded .expand-btn { transform: rotate(180deg); }
+
+.detail-panel {
+display: none; background: #f9f7f5;
+border-top: 1px solid #EEE; padding: 12px 14px 14px;
+font-size: 13px; font-family: sans-serif; color: #444; line-height: 1.6;
+}
+.item.expanded .detail-panel { display: block; }
+.detail-panel strong {
+color: #1C2A3A; display: block;
+margin-top: 8px; margin-bottom: 2px;
+font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+}
+.detail-panel strong:first-child { margin-top: 0; }
+
+.day-progress {
+font-size: 11px; font-family: sans-serif;
+color: rgba(240,237,232,0.55); margin-top: 6px;
+}
+
+.reset-btn {
+position: fixed; bottom: 20px; right: 20px;
+background: #1C2A3A; color: white; border: none;
+border-radius: 100px; padding: 10px 18px;
+font-size: 12px; font-family: sans-serif; font-weight: 700;
+cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <p>Training Tracker</p>
+  <h1>6-Day Workout Split</h1>
+  <div class="tab-bar" id="tabBar"></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</header>
+
+<main id="main"></main>
+<button class="reset-btn" onclick="resetDay()">↺ Reset Day</button>
+
+<script>
+const DAYS = [
+  {
+    id: "upperA",
+    label: "Upper A", sub: "Gym 🏋️",
+    emoji: "💪", color: "#2980b9",
+    desc: "Back, shoulder rehab, push, arms — cable & machine focus",
+    location: "Gym",
+    sections: [
+      { label: "Back — Pull", exercises: [
+        { name: "Seated Cable Row (Neutral Grip)", detail: "4×10–12 · Cable",
+          setup: "Sit upright at the cable station. Feet on the platform, slight bend in knees. Grab the neutral grip handle.",
+          execution: "Pull the handle into your lower ribs, driving elbows back and squeezing shoulder blades together. Pause 1 second. Control the return.",
+          mistakes: "Leaning back to generate momentum. Shrugging. Not fully retracting the shoulder blades.",
+          why: "Primary back strength exercise. Neutral grip reduces shoulder stress." },
+        { name: "Lat Pulldown (Wide Grip)", detail: "3×10–12 · Machine",
+          setup: "Sit at the lat pulldown machine. Thighs secured. Grip slightly wider than shoulder-width, overhand.",
+          execution: "Pull the bar to your upper chest, leading with elbows driving down and back. Do NOT pull behind the neck.",
+          mistakes: "Pulling behind the neck — never with a disc replacement. Using momentum.",
+          why: "Develops lat width. No behind-neck rule is non-negotiable for cervical spine protection." },
+      ]},
+      { label: "Shoulder Rehab", exercises: [
+        { name: "Band Pull-Apart", detail: "3×20 · Band · At shoulder height",
+          setup: "Hold a resistance band with both hands at shoulder width, arms extended in front at shoulder height.",
+          execution: "Pull the band apart to your sides until fully extended. Squeeze shoulder blades together. Controlled return.",
+          mistakes: "Arms dropping below shoulder height. Shrugging. Going too fast.",
+          why: "Activates posterior cuff and rear delts with minimal load." },
+        { name: "Standing Scaption", detail: "3×12–15 · 5–8 lbs · Thumbs up",
+          setup: "Stand tall with light dumbbells at your sides, thumbs pointing forward.",
+          execution: "Raise both arms forward and out at a 30–45° angle (scapular plane). Thumbs up. Raise to just below shoulder height, pause, lower slowly.",
+          mistakes: "Raising straight to the side. Going above shoulder height. Shrugging. Too heavy.",
+          why: "The scapular plane reduces impingement. Targets supraspinatus and middle deltoid safely." },
+        { name: "Rear Delt Fly — Pec Deck", detail: "3×12–15 · Machine · Reverse setting",
+          setup: "Sit facing the pec deck machine. Set arms to the widest position.",
+          execution: "Open arms out to the sides in a reverse fly, squeezing rear delts at the end. Control the return.",
+          mistakes: "Going too heavy and shrugging. Jerking the movement.",
+          why: "Isolates the posterior deltoid. Important for shoulder balance and AC joint." },
+      ]},
+      { label: "Push", exercises: [
+        { name: "Dumbbell Lateral Raise", detail: "3×12–15 · 8–10 lbs · Below shoulder height",
+          setup: "Stand with light dumbbells at your sides, slight bend in elbows.",
+          execution: "Raise arms out to shoulder height — stop at or just below horizontal. Thumbs slightly down. Lower slowly.",
+          mistakes: "Raising above shoulder height. Shrugging. Using momentum.",
+          why: "Builds medial deltoid safely within the AC joint and supraspinatus limits." },
+      ]},
+      { label: "Arms", exercises: [
+        { name: "Cable Tricep Pushdown", detail: "3×12–15 · Cable · Rope or bar",
+          setup: "Stand at the cable machine, attachment at upper position. Elbows at sides.",
+          execution: "Push down until arms fully extended. Squeeze triceps. Elbows stay fixed.",
+          mistakes: "Elbows flaring out. Leaning forward.",
+          why: "Constant cable tension through full tricep range." },
+        { name: "Dumbbell Hammer Curl", detail: "3×12 · 15–20 lbs",
+          setup: "Stand with dumbbells at sides, palms facing each other.",
+          execution: "Curl up keeping palms facing each other. Squeeze at top. Lower slowly. Elbows pinned.",
+          mistakes: "Swinging the torso. Elbows drifting forward.",
+          why: "Neutral grip reduces wrist and elbow stress given nerve symptoms." },
+      ]},
+    ]
+  },
+
+  {
+    id: "upperB",
+    label: "Upper B", sub: "Home 🏠",
+    emoji: "💪", color: "#27ae60",
+    desc: "Back, shoulder rehab, push, arms — dumbbell & band focus",
+    location: "Home",
+    sections: [
+      { label: "Back — Pull", exercises: [
+        { name: "Single Arm Dumbbell Row", detail: "3×10–12 each side · 25–35 lbs",
+          setup: "Place one hand and same-side knee on a bench. Back flat. Dumbbell hanging in the other hand.",
+          execution: "Pull the dumbbell up toward your hip, driving the elbow back. Squeeze at the top, lower slowly.",
+          mistakes: "Rotating the torso too much. Jerking the weight up.",
+          why: "Trains each side independently. Excellent for back thickness and shoulder blade control." },
+        { name: "Dumbbell Pullover", detail: "3×10–12 · Home sub for Lat Pulldown",
+          setup: "Lie across a bench or on the floor. Hold one dumbbell with both hands above your chest, arms slightly bent.",
+          execution: "Lower the dumbbell back over your head in an arc. Pull it back using your lats, not your arms.",
+          mistakes: "Elbows flaring wide. Overextending the lower back. Too heavy.",
+          why: "Home lat pulldown substitute. Also opens the chest and thoracic spine." },
+      ]},
+      { label: "Shoulder Rehab", exercises: [
+        { name: "Band Pull-Apart", detail: "3×20 · Band · At shoulder height",
+          setup: "Hold a resistance band with both hands at shoulder width, arms extended at shoulder height.",
+          execution: "Pull the band apart to your sides until fully extended. Squeeze shoulder blades. Controlled return.",
+          mistakes: "Arms dropping below shoulder height. Shrugging. Going too fast.",
+          why: "Activates posterior cuff and rear delts with minimal load." },
+        { name: "DB External Rotation (lying)", detail: "3×15 each side · Very light",
+          setup: "Lie on your side. Top elbow bent to 90°, tucked against your side, forearm toward the floor.",
+          execution: "Rotate your forearm upward toward the ceiling, keeping elbow pinned. Pause at top, lower slowly.",
+          mistakes: "Rolling the body to compensate. Elbow lifting away from side.",
+          why: "Strengthens infraspinatus and teres minor with gravity as the only load — gentle on the shoulder." },
+        { name: "Dumbbell Rear Delt Fly", detail: "3×15 · Light · Hinge forward",
+          setup: "Stand with a slight hinge forward at hips, back flat. Light dumbbells hanging in front, palms facing each other.",
+          execution: "Raise both arms out to the sides with a slight elbow bend, squeezing rear delts at the top. Lower slowly.",
+          mistakes: "Swinging the torso. Raising arms above shoulder level.",
+          why: "Home version of the pec deck rear delt fly." },
+        { name: "Standing Scaption", detail: "3×12–15 · 5–8 lbs · Thumbs up",
+          setup: "Stand tall with light dumbbells at your sides, thumbs pointing forward.",
+          execution: "Raise arms at a 30–45° angle (scapular plane) to just below shoulder height. Thumbs up throughout.",
+          mistakes: "Raising straight to the side. Going above shoulder height. Shrugging.",
+          why: "The scapular plane is the joint-friendly arc for the shoulder — reduces impingement risk." },
+      ]},
+      { label: "Push", exercises: [
+        { name: "Dumbbell Floor Press", detail: "3×10–12 · 15–20 lbs",
+          setup: "Lie on the floor, knees bent. Dumbbells above chest, elbows resting on the floor.",
+          execution: "Press up to full extension, lower until elbows touch the floor.",
+          mistakes: "Arching the lower back. Flaring elbows too wide.",
+          why: "Floor limits bottom range — protects the shoulder at its most vulnerable position." },
+        { name: "Overhead Press (Partial ROM)", detail: "3×10 · 12–15 lbs · Stop before lockout",
+          setup: "Stand or sit with dumbbells at shoulder height, elbows at 90°.",
+          execution: "Press to about 80% of full extension. Stop before lockout. Do not press behind the head.",
+          mistakes: "Going to full lockout. Pressing behind the neck.",
+          why: "Partial ROM avoids the impingement zone given your supraspinatus history." },
+      ]},
+      { label: "Arms", exercises: [
+        { name: "Dumbbell Tricep Kickback", detail: "3×12 each side · 8–12 lbs",
+          setup: "Hinge forward at hips, back flat. Upper arm parallel to the floor.",
+          execution: "Extend your forearm back until arm is straight, squeezing the tricep. Lower slowly. Upper arm stays still.",
+          mistakes: "Letting the upper arm drop. Using momentum.",
+          why: "Home tricep isolation. Fully shortens the tricep at end range." },
+        { name: "Dumbbell Hammer Curl", detail: "3×12 · 15–20 lbs",
+          setup: "Stand with dumbbells at sides, palms facing each other.",
+          execution: "Curl up keeping palms facing each other. Squeeze at top. Lower slowly.",
+          mistakes: "Swinging the torso. Elbows drifting forward.",
+          why: "Neutral grip reduces wrist and elbow stress given nerve symptoms." },
+      ]},
+    ]
+  },
+
+  {
+    id: "lowerA",
+    label: "Lower A", sub: "Gym 🏋️",
+    emoji: "🦵", color: "#8e44ad",
+    desc: "Machine-heavy lower body — leg press, leg curl, hip abductor, hip thrust",
+    location: "Gym",
+    sections: [
+      { label: "Compound", exercises: [
+        { name: "Leg Press", detail: "4×10–12 · Machine",
+          setup: "Sit in the leg press. Feet shoulder-width, toes slightly out. Back flat against the pad.",
+          execution: "Lower to about 90° knee bend. Press back to start — don't lock knees at the top.",
+          mistakes: "Lower back peeling off the seat. Locking knees at the top.",
+          why: "Heavy lower body loading with no spinal compression. Safe for disc replacement." },
+        { name: "Cable Squat", detail: "3×12 · Low cable · Goblet-style",
+          setup: "Set cable to lowest position with a rope. Stand facing the machine, feet shoulder-width. Hold at chest height. Step back until cable is taut.",
+          execution: "Squat down keeping chest up and cable taut. The cable acts as a counterbalance. Drive through heels to stand.",
+          mistakes: "Letting the cable go slack at the top. Knees caving in. Heels lifting.",
+          why: "Cable counterbalance improves torso position and gives constant tension through the full range." },
+        { name: "Romanian Deadlift", detail: "4×10–12 · 25–30 lbs · Neutral spine",
+          setup: "Stand with dumbbells in front of thighs. Slight knee bend. Shoulders back.",
+          execution: "Hinge at hips, pushing them back as dumbbells lower along your legs. Back flat. Lower to mid-shin stretch. Drive hips forward to return.",
+          mistakes: "Rounding the lower back — stop before this happens. Too much knee bend.",
+          why: "Primary hamstring and glute exercise. Neutral spine rule critical for disc replacement." },
+      ]},
+      { label: "Glutes", exercises: [
+        { name: "Hip Thrust", detail: "3×10–12 · 25–45 lbs · Dumbbell on hips",
+          setup: "Upper back against a bench. Dumbbell on hips. Feet flat, hip-width, knees at 90°.",
+          execution: "Drive hips up squeezing glutes, pushing through heels. Straight line knees to shoulders. Hold 1–2 sec. Lower — don't touch floor between reps.",
+          mistakes: "Hyperextending the lower back at the top. Pushing through toes.",
+          why: "Highest glute max activation of any exercise. Strong glutes reduce lumbar load." },
+        { name: "Leg Curl Machine", detail: "3×12 · Machine",
+          setup: "Lie face down. Pad just above heels.",
+          execution: "Curl heels toward glutes through full range. Squeeze at top. Lower slowly.",
+          mistakes: "Hips lifting off the pad. Going too heavy and losing range.",
+          why: "Isolated hamstring work — hamstrings support glutes and lower back." },
+        { name: "Hip Abductor Machine", detail: "3×15 · Machine",
+          setup: "Sit in the machine. Pads against outside of both knees.",
+          execution: "Push pads apart. Hold briefly at widest point. Slowly return.",
+          mistakes: "Too heavy and compensating with the lower back. Rushing.",
+          why: "Strengthens gluteus medius — critical for pelvic stability and spinal load reduction." },
+        { name: "Cable Pull-Through", detail: "3×12–15 · Cable · Hinge pattern",
+          setup: "Face away from low cable. Reach between legs and grab rope. Step forward for tension. Feet shoulder-width.",
+          execution: "Hinge at hips, pushing them back as rope pulls between legs. Back flat. Drive hips forward explosively squeezing glutes at the top.",
+          mistakes: "Squatting instead of hinging. Rounding the lower back. Arms pulling — hips do all the work.",
+          why: "Glute and hamstring hinge with constant cable tension. Very spine-friendly." },
+        { name: "Back Extension (Bodyweight)", detail: "3×12–15 · Bodyweight · Stop at neutral",
+          setup: "Hips on the pad, feet secured, arms crossed over chest. Start with torso hanging at 45°.",
+          execution: "Squeeze glutes and raise torso until body forms a straight line. Stop at neutral — do not hyperextend. Hold 1 sec, lower slowly.",
+          mistakes: "Hyperextending the lower back — critical with disc replacement. Using momentum. Looking up.",
+          why: "Strengthens erectors and glute max. Bodyweight only keeps spinal load safe." },
+      ]},
+    ]
+  },
+
+  {
+    id: "lowerB",
+    label: "Lower B", sub: "Home 🏠",
+    emoji: "🦵", color: "#e67e22",
+    desc: "Dumbbell & band lower body — squats, lunges, bridges, clamshells",
+    location: "Home",
+    sections: [
+      { label: "Compound", exercises: [
+        { name: "Goblet Squat", detail: "4×12 · 25–45 lbs · Slow tempo",
+          setup: "Hold one dumbbell vertically at chest with both hands. Feet shoulder-width, toes out slightly.",
+          execution: "Squat down between your knees, chest up, dumbbell close to body. Knees out over toes. Drive through heels to stand.",
+          mistakes: "Chest falling forward. Knees caving. Heels lifting.",
+          why: "Goblet position keeps torso upright — protective for the spine." },
+        { name: "Bulgarian Split Squat", detail: "3×10 each leg · 15–25 lbs · Rear foot elevated",
+          setup: "Stand 2 feet in front of a bench. Rear foot top on the bench. Dumbbells at sides.",
+          execution: "Lower back knee straight down. Front knee tracks over toes. Torso upright. Drive through front heel. Complete all reps one side then switch.",
+          mistakes: "Front foot too close — shin angles forward. Torso collapsing forward. Rushing descent.",
+          why: "Top-four glute exercise. Deep hip flexion maximally loads glute max through full range." },
+        { name: "Reverse Lunge", detail: "3×10 each leg · 15–20 lbs",
+          setup: "Stand with dumbbells at sides. Step one foot back.",
+          execution: "Lower back knee toward floor. Front shin vertical — knee over ankle. Push off back foot to return. Alternate legs.",
+          mistakes: "Front knee past toes. Torso leaning forward.",
+          why: "Safer for knees than forward lunges. Builds single-leg strength that protects the spine." },
+      ]},
+      { label: "Glutes", exercises: [
+        { name: "Hip Thrust", detail: "3×10–12 · 25–45 lbs · Dumbbell on hips",
+          setup: "Upper back against a bench. Dumbbell on hips. Feet flat, hip-width, knees at 90°.",
+          execution: "Drive hips up squeezing glutes, pushing through heels. Hold 1–2 sec at top. Lower — don't touch floor between reps.",
+          mistakes: "Hyperextending the lower back. Pushing through toes.",
+          why: "Highest glute max activation of any exercise." },
+        { name: "Banded Glute Bridge", detail: "3×15–20 · Band above knees",
+          setup: "Lie on back, knees bent, feet flat. Band just above knees.",
+          execution: "Press knees out against band. Drive hips up squeezing glutes. Hold 2 sec. Lower slowly.",
+          mistakes: "Driving with the lower back. Knees caving.",
+          why: "Band activates gluteus medius alongside glute max. Excellent for lower back support." },
+        { name: "Banded Clamshell", detail: "3×15 each side · Band above knees",
+          setup: "Lie on side, hips and knees stacked, bent to 45°. Band just above knees.",
+          execution: "Keeping feet together, open top knee upward. Don't let pelvis rotate back. Squeeze glute at top.",
+          mistakes: "Rolling pelvis backward. Moving too fast.",
+          why: "Isolates gluteus medius with no spinal load." },
+      ]},
+    ]
+  },
+
+  {
+    id: "coreA",
+    label: "Core/Mob A", sub: "Gym 🏋️",
+    emoji: "🧘", color: "#16a085",
+    desc: "Core stability, cable core, mobility and neck rehab",
+    location: "Gym",
+    sections: [
+      { label: "Core", exercises: [
+        { name: "Dead Bug", detail: "3×10 each side · Lower back flat",
+          setup: "Lie on back. Arms toward ceiling. Hips and knees at 90°.",
+          execution: "Lower right arm overhead and left leg simultaneously. Lower back pressed flat throughout. Return and switch.",
+          mistakes: "Lower back arching off the floor. Moving too fast.",
+          why: "Anti-extension core stability with zero spinal compression." },
+        { name: "Bird Dog", detail: "3×10 each side · Slow · Hold 2–3 sec",
+          setup: "All fours — hands under shoulders, knees under hips. Spine neutral.",
+          execution: "Extend right arm forward and left leg back. Hold 2–3 sec. Return slowly. Switch sides. Hips stay level.",
+          mistakes: "Hips tilting to one side. Rushing. Leg lifting too high.",
+          why: "Anti-rotation spinal stability. Complements Dead Bug — one trains from the back, the other from the front." },
+        { name: "Side Plank", detail: "3×25–30 sec each side",
+          setup: "On your side. Forearm on the floor, elbow under shoulder. Feet stacked or staggered. Body in a straight line.",
+          execution: "Lift hips off the floor. Maintain straight line from head to heel. Breathe steadily. Lower with control.",
+          mistakes: "Hips sagging. Top hip rotating forward. Holding your breath.",
+          why: "Anti-lateral flexion — trains obliques and QL to resist side bending. Completes the three-plane core stability programme." },
+        { name: "Plank", detail: "3×30–45 sec",
+          setup: "Forearms on floor, elbows under shoulders. Toes on floor. Body in straight line.",
+          execution: "Hold. Hips level — don't sag or pike. Breathe steadily.",
+          mistakes: "Hips sagging. Holding breath. Going longer than form allows.",
+          why: "Anti-extension isometric core hold." },
+        { name: "Cable Wood Chopper", detail: "3×12 each side · High to low",
+          setup: "Stand sideways to cable machine, handle at shoulder height or above. Both hands on handle.",
+          execution: "Pull cable diagonally across body from high to low, rotating through torso. Arms fairly straight. Control the return.",
+          mistakes: "Bending arms into a row. Rotating from hips only. Too heavy.",
+          why: "Rotational core strength through the obliques. Functional for everyday twisting movements." },
+      ]},
+      { label: "Neck & Shoulder Rehab", exercises: [
+        { name: "Resisted Quadruped Chin Tuck", detail: "3×10 · Hold 5 sec · On all fours",
+          setup: "All fours. Spine neutral. Place two fingers on your chin.",
+          execution: "Push chin straight back against your finger resistance. Hold 5 seconds. Release. Repeat. Neck only — rest of spine stays still.",
+          mistakes: "Tilting chin down. Moving the whole spine. Too much finger resistance.",
+          why: "Activates deep cervical flexors more than a standard chin tuck. Critical for post-disc-replacement neck stability." },
+        { name: "Seated First Rib Mobilisation", detail: "3×5 each side · Breath-driven",
+          setup: "Sit tall. Fingertips of one hand on top of opposite shoulder where neck meets shoulder. Apply gentle downward pressure.",
+          execution: "Tilt head away and take a slow deep breath in. As you exhale, gently increase downward pressure. 5 slow breath cycles each side.",
+          mistakes: "Pressing too hard. Holding your breath. Rushing.",
+          why: "The first rib elevates after cervical disc surgery. Gentle mobilisation helps restore normal position and reduces arm nerve symptoms." },
+        { name: "Seated Anterior Scalene Stretch", detail: "3×30 sec each side · Chin tuck first",
+          setup: "Sit tall. Chin tuck first. Place one hand flat on collarbone to anchor chest.",
+          execution: "Keeping chin tucked, tilt head back and to the opposite side. Hand on collarbone prevents chest rising. Hold 30 seconds each side.",
+          mistakes: "Not doing chin tuck first. Letting collarbone rise. Tilting too aggressively.",
+          why: "Anterior scalenes tighten after cervical disc surgery and can compress the brachial plexus causing arm and hand symptoms." },
+      ]},
+      { label: "Mobility", exercises: [
+        { name: "Open Book Stretch", detail: "8 each side · Lie on side",
+          setup: "Lie on right side, hips and knees stacked at 90°. Both arms at chest height, palms together.",
+          execution: "Keeping hips still, lift left arm up and over rotating chest open. Gaze follows the hand. Hold 2–3 breaths. Return.",
+          mistakes: "Top knee rolling forward. Forcing the arm. Holding breath.",
+          why: "Restores thoracic rotation. Directly improves shoulder mechanics." },
+        { name: "Cat Cow", detail: "10 slow cycles · Breath-led",
+          setup: "All fours. Hands under shoulders, knees under hips. Neutral spine.",
+          execution: "Inhale — belly drops, head and tailbone lift gently (Cow). Exhale — spine rounds toward ceiling, chin and pelvis tuck (Cat). Breath drives movement.",
+          mistakes: "Moving too fast. Forcing the lower back into an extreme arch.",
+          why: "Rhythmic segmental spinal mobility. Warms up the discs before loading." },
+        { name: "Side Rib Mobilisation", detail: "5 each side · Seated",
+          setup: "Sit tall. Free hand on the side of your ribcage.",
+          execution: "Raise one arm overhead and reach up and over to the opposite side. Take 3 deep breaths into the side ribcage. Feel it expand laterally.",
+          mistakes: "Rotating forward instead of bending sideways. Breathing into chest not side ribs.",
+          why: "Mobilises the intercostals and lateral thoracic fascia — stiffness limits thoracic rotation." },
+      ]},
+    ]
+  },
+
+  {
+    id: "coreB",
+    label: "Core/Mob B", sub: "Home 🏠",
+    emoji: "🧘", color: "#c0392b",
+    desc: "Core, foam rolling, neck rehab and full mobility",
+    location: "Home",
+    sections: [
+      { label: "Core", exercises: [
+        { name: "Dead Bug", detail: "3×10 each side · Lower back flat",
+          setup: "Lie on back. Arms toward ceiling. Hips and knees at 90°.",
+          execution: "Lower right arm overhead and left leg simultaneously. Lower back pressed flat. Return and switch.",
+          mistakes: "Lower back arching. Moving too fast.",
+          why: "Anti-extension core stability with zero spinal compression." },
+        { name: "Bird Dog", detail: "3×10 each side · Slow · Hold 2–3 sec",
+          setup: "All fours — hands under shoulders, knees under hips. Spine neutral.",
+          execution: "Extend right arm forward and left leg back. Hold 2–3 sec. Return slowly. Switch sides.",
+          mistakes: "Hips tilting. Rushing. Leg lifting too high.",
+          why: "Anti-rotation spinal stability." },
+        { name: "Side Plank", detail: "3×25–30 sec each side",
+          setup: "On your side. Forearm on floor, elbow under shoulder. Body in a straight line.",
+          execution: "Lift hips. Hold. Breathe steadily. Lower with control. Switch sides.",
+          mistakes: "Hips sagging. Top hip rotating forward. Holding breath.",
+          why: "Anti-lateral flexion — completes three-plane core stability." },
+        { name: "Plank", detail: "3×30–45 sec",
+          setup: "Forearms on floor. Toes on floor. Body in a straight line.",
+          execution: "Hold. Hips level. Breathe steadily.",
+          mistakes: "Hips sagging. Holding breath.",
+          why: "Anti-extension isometric core hold." },
+        { name: "Banded Pallof Hold", detail: "3×20 sec each side · Band · Anti-rotation",
+          setup: "Anchor a band at chest height to a door or post. Stand sideways to anchor, holding the band at your chest with both hands.",
+          execution: "Press the band straight out from your chest, arms fully extended. Hold 20 seconds — resist the rotation. Return. Switch sides.",
+          mistakes: "Letting hips rotate. Rushing — the hold is where the work happens.",
+          why: "Anti-rotation core stability using a band — home version that complements cable wood chopper." },
+      ]},
+      { label: "Foam Rolling & Mobility", exercises: [
+        { name: "Foam Roller — Thoracic Spine", detail: "2 min · Upper back over roller",
+          setup: "Foam roller horizontal behind you. Lower upper back onto it, hands behind head.",
+          execution: "Slowly roll up and down from mid-back to upper back. Pause on tight spots. Do not roll the lower back.",
+          mistakes: "Rolling too fast. Going into the lower back.",
+          why: "Releases thoracic stiffness that limits shoulder movement and loads the cervical spine." },
+        { name: "Foam Roller — Lats", detail: "60 sec each side",
+          setup: "Lie on side with roller under armpit/lat area, arm extended overhead.",
+          execution: "Slowly roll from armpit down to mid-ribcage. Pause on tight spots. Rotate forward and back to find tender areas.",
+          mistakes: "Rushing through it.",
+          why: "Tight lats restrict shoulder elevation and pull the shoulder blade into poor position." },
+        { name: "Cat Cow", detail: "10 slow cycles · Breath-led",
+          setup: "All fours. Neutral spine.",
+          execution: "Inhale — belly drops, head and tailbone lift (Cow). Exhale — spine rounds, chin and pelvis tuck (Cat).",
+          mistakes: "Moving too fast. Forcing the lower back.",
+          why: "Rhythmic segmental spinal mobility. Warms up the discs." },
+        { name: "Open Book Stretch", detail: "8 each side · Lie on side",
+          setup: "Lie on side, hips and knees stacked at 90°. Both arms at chest height palms together.",
+          execution: "Keeping hips still, lift top arm up and over rotating chest open. Hold 2–3 breaths. Return.",
+          mistakes: "Top knee rolling forward. Forcing the arm. Holding breath.",
+          why: "Restores thoracic rotation. Directly improves shoulder mechanics." },
+        { name: "Side Rib Mobilisation", detail: "5 each side",
+          setup: "Sit or stand tall. Free hand on side of ribcage.",
+          execution: "Raise one arm overhead and reach over to the opposite side. 3 deep breaths into the side ribcage.",
+          mistakes: "Rotating forward. Breathing into chest.",
+          why: "Mobilises intercostals and lateral thoracic fascia." },
+      ]},
+      { label: "Neck & Shoulder Rehab", exercises: [
+        { name: "Resisted Quadruped Chin Tuck", detail: "3×10 · Hold 5 sec",
+          setup: "All fours. Two fingers on your chin.",
+          execution: "Push chin straight back against finger resistance. Hold 5 seconds. Neck only.",
+          mistakes: "Tilting chin down. Moving whole spine.",
+          why: "Activates deep cervical flexors — critical for post-disc-replacement stability." },
+        { name: "Standing Levator Scapulae Stretch", detail: "3×30 sec each side",
+          setup: "Stand tall. Right arm behind back to anchor shoulder. Left hand gently on top of head.",
+          execution: "Tilt head down and left, rotate nose toward left armpit. Hand adds gentle weight only. Hold 30 seconds. Switch.",
+          mistakes: "Pulling head forcefully. Not rotating the nose toward the armpit.",
+          why: "Releases levator scapulae — chronically tight after disc replacement and shoulder guarding." },
+        { name: "Standing Upper Trapezius Stretch", detail: "3×30 sec each side",
+          setup: "Stand tall. Sit on right hand to anchor the shoulder. Left hand gently on top of head.",
+          execution: "Tilt left ear toward left shoulder — pure lateral bend, no rotation. Hold 30 seconds. Switch.",
+          mistakes: "Not anchoring the opposite shoulder. Adding rotation.",
+          why: "Releases upper trap — overloaded when lower trap and serratus are weak." },
+        { name: "Scapular Setting", detail: "3×10 · Hold 5 sec",
+          setup: "Stand or sit tall.",
+          execution: "Gently draw shoulder blades down and slightly together. Hold 5 seconds. Release completely. Do not shrug.",
+          mistakes: "Squeezing too hard. Holding breath.",
+          why: "Trains lower trapezius in its optimal resting position — protects the supraspinatus space." },
+        { name: "Chin Tuck (daily)", detail: "3×10 · Hold 5 sec",
+          setup: "Seated or standing tall.",
+          execution: "Draw chin straight back — double chin. Hold 5 seconds. Release. Repeat 10 times.",
+          mistakes: "Tilting chin down. Tensing shoulders.",
+          why: "Daily decompression for the cervical discs." },
+        { name: "Wrist Circles", detail: "10 each direction · Both wrists",
+          setup: "Hands relaxed in front of you.",
+          execution: "Slowly rotate both wrists in full circles, 10 times each direction.",
+          mistakes: "None — just move slowly.",
+          why: "Keeps wrist and forearm mobile. Helps manage hand and thumb nerve symptoms." },
+        { name: "Wall Slides", detail: "3×10",
+          setup: "Back and arms flat against wall. Elbows and wrists touching wall, bent to 90°.",
+          execution: "Slowly slide arms up the wall as high as possible keeping elbows and wrists in contact. Slide back down.",
+          mistakes: "Arms coming off the wall. Shrugging.",
+          why: "Trains shoulder blade upward rotation — the motion impaired by your tendinopathy." },
+      ]},
+      { label: "End-of-Session Stretch", exercises: [
+        { name: "Child's Pose Lateral Reach", detail: "30 sec each side",
+          setup: "Child's pose — knees wide, hips back toward heels, arms extended.",
+          execution: "Walk both hands to one side. Hold 30 seconds each side.",
+          mistakes: "None — just breathe.",
+          why: "Stretches lats and gently decompresses the lumbar spine." },
+        { name: "Supine Spinal Twist", detail: "30 sec each side",
+          setup: "Lie on back. Pull one knee to chest, let it fall across your body.",
+          execution: "Extend the same-side arm out. Let gravity rotate your spine. Hold 30 seconds.",
+          mistakes: "Forcing the shoulder down.",
+          why: "Gentle lumbar rotation to release tightness after training." },
+        { name: "Hip Flexor Stretch", detail: "30 sec each side",
+          setup: "Kneel on one knee, other foot forward in a lunge.",
+          execution: "Drive hips forward until you feel a stretch in the front of the back hip. Torso tall.",
+          mistakes: "Arching the lower back — tuck the pelvis slightly.",
+          why: "Tight hip flexors increase lumbar load. Essential after lower body work." },
+        { name: "Legs Up the Wall", detail: "3–5 min",
+          setup: "Lie on back, legs extended up a wall. Hips close to the wall.",
+          execution: "Relax completely. Let gravity drain the legs. Breathe slowly.",
+          mistakes: "None — pure rest.",
+          why: "Reduces lower limb swelling, calms the nervous system, aids recovery." },
+      ]},
+    ]
+  },
+];
+
+// ── Day colours ──
+const DAY_COLORS = {
+  upperA: "#2980b9", upperB: "#27ae60",
+  lowerA: "#8e44ad", lowerB: "#e67e22",
+  coreA:  "#16a085", coreB:  "#c0392b",
+};
+
+// ── Storage ──
+function loadState() {
+  try { return JSON.parse(localStorage.getItem("split_v1") || "{}"); }
+  catch { return {}; }
+}
+function saveState(s) {
+  try { localStorage.setItem("split_v1", JSON.stringify(s)); } catch {}
+}
+
+let state = loadState();
+let activeDay = DAYS[0].id;
+
+// ── Build UI ──
+function build() {
+  const tabBar = document.getElementById("tabBar");
+  const main   = document.getElementById("main");
+  tabBar.innerHTML = "";
+  main.innerHTML   = "";
+
+  DAYS.forEach(day => {
+    // Tab
+    const btn = document.createElement("button");
+    btn.className = "tab" + (day.id === activeDay ? " active" : "");
+    btn.innerHTML = `<span class="tab-label">${day.label}</span><span class="tab-sub">${day.sub}</span>`;
+    btn.onclick = () => { activeDay = day.id; build(); };
+    tabBar.appendChild(btn);
+
+    // Panel
+    const panel = document.createElement("div");
+    panel.className = "day-panel" + (day.id === activeDay ? " active" : "");
+
+    // Day header
+    const allEx = day.sections.flatMap(s => s.exercises);
+    const doneCount = allEx.filter((_, i) => state[`${day.id}_${flatIdx(day, i)}`]).length;
+    const hdr = document.createElement("div");
+    hdr.className = "day-header";
+    hdr.style.background = DAY_COLORS[day.id];
+    hdr.innerHTML = `
+      <div class="emoji">${day.emoji}</div>
+      <div>
+        <h2>${day.label}</h2>
+        <div class="meta">${day.desc}</div>
+        <div class="day-progress">${doneCount} / ${allEx.length} done</div>
+      </div>
+      <div class="badge">${day.location}</div>`;
+    panel.appendChild(hdr);
+
+    // Sections
+    let globalIdx = 0;
+    day.sections.forEach(sec => {
+      const secLabel = document.createElement("div");
+      secLabel.className = "section-label";
+      secLabel.textContent = sec.label;
+      panel.appendChild(secLabel);
+
+      sec.exercises.forEach((ex, _) => {
+        const idx = globalIdx++;
+        const key = `${day.id}_${idx}`;
+        const done = !!state[key];
+
+        const item = document.createElement("div");
+        item.className = "item" + (done ? " done" : "");
+        item.id = key;
+
+        item.innerHTML = `
+          <div class="item-row" onclick="toggleItem('${key}', event)">
+            <div class="check">${done ? "✓" : ""}</div>
+            <div style="flex:1">
+              <div class="ex-name">${ex.name}</div>
+              <div class="ex-detail">${ex.detail}</div>
+            </div>
+            <button class="expand-btn" onclick="expandItem('${key}', event)">⌄</button>
+          </div>
+          <div class="detail-panel">
+            <strong>📐 Setup</strong>${ex.setup}
+            <strong>▶️ Execution</strong>${ex.execution}
+            <strong>⚠️ Common Mistakes</strong>${ex.mistakes}
+            <strong>💡 Why This Matters</strong>${ex.why}
+          </div>`;
+
+        panel.appendChild(item);
+      });
+    });
+
+    main.appendChild(panel);
+  });
+
+  updateProgress();
+}
+
+function flatIdx(day, globalIdx) { return globalIdx; }
+
+function toggleItem(key, e) {
+  if (e.target.classList.contains("expand-btn")) return;
+  state[key] = !state[key];
+  saveState(state);
+  build();
+}
+
+function expandItem(key, e) {
+  e.stopPropagation();
+  const item = document.getElementById(key);
+  if (item) item.classList.toggle("expanded");
+}
+
+function updateProgress() {
+  const day = DAYS.find(d => d.id === activeDay);
+  if (!day) return;
+  const allEx = day.sections.flatMap(s => s.exercises);
+  const done  = allEx.filter((_, i) => state[`${day.id}_${i}`]).length;
+  const pct   = allEx.length ? (done / allEx.length * 100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+
+function resetDay() {
+  if (!confirm(`Reset all checkboxes for ${activeDay}?`)) return;
+  const day = DAYS.find(d => d.id === activeDay);
+  const allEx = day.sections.flatMap(s => s.exercises);
+  allEx.forEach((_, i) => { delete state[`${activeDay}_${i}`]; });
+  saveState(state);
+  build();
+}
+
+build();
+</script>
+
+</body>
+</html>
